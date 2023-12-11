@@ -39,30 +39,33 @@ while True:
             try:
                 data = sock.recv(2048).decode('utf-8')
                 if data.startswith("#"):
-                    print("encore !")
-                    username = data[1:10]
-                    password = data[10:]
+                    split_values = data.split(',')
+                    username = split_values[0][1:]  # Remove the '#' from the username
+                    password = split_values[1]
                     cu1 = db.cursor()
                     cu1.execute("select username,password from users where username=? and password=?",(username,password))
                     user1 = cu1.fetchone()
-                    if username == user1[0] and password == user1[1]:
+                    if user1 and username == user1[0] and password == user1[1]:
                         users[username.lower()] = sock
                         print("l'utilisateur " + username + " connecté.")
                         sock.send(("Bienvenue : " + str(data[1:10])).encode('utf-8'))
                     else:
                         print("mot de passe incorrect")
                         sock.send(("Mot de passe incorrect").encode('utf-8'))
-                        
                 elif data.startswith("+"):
-                    username = data[1:10]
-                    nom = data[10:15]
-                    prenom = data[16:20]
-                    password = data[20:25]
+                    split_values = data.split(',')
+
+                    # Access individual values
+                    username = split_values[0][1:]  # Remove the '+' from the username
+                    nom = split_values[1]
+                    prenom = split_values[2]
+                    password = split_values[3]
+
                     print(username, password, nom, prenom)
                     cur1 = db.cursor()
                     cur1.execute('''INSERT INTO users(username,nom,prenom,password) VALUES(?,?,?,?)''',(username, nom, prenom, password))
                     db.commit()
-                    sock.send(("l'utilisateur " + str(data[1:10])+"ajouter avec success").encode('utf-8'))
+                    sock.send(("l'utilisateur " + str(username)+"ajouter avec success").encode('utf-8'))
             except Exception as e:
                 print(str(e))
                 continue
