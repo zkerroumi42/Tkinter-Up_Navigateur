@@ -15,9 +15,29 @@ cursor.execute('''
         username varchar(50),
         nom varchar(50),
         prenom varchar(50),
+        question varchar(50),
+        answer varchar(50),
         password varchar(50),
         id INTEGER PRIMARY KEY AUTOINCREMENT
     )
+''')
+cursor.execute('''
+CREATE TABLE IF NOT EXISTS historiques (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    data_search VARCHAR(50),
+    id_user INTEGER,
+    datetime VARCplaceHAR(50),
+    FOREIGN KEY (id_user) REFERENCES users (id)
+);
+''')
+cursor.execute('''
+CREATE TABLE IF NOT EXISTS favorits (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    data_favorite VARCHAR(50),
+    id_user INTEGER,
+    datetime VARCplaceHAR(50),
+    FOREIGN KEY (id_user) REFERENCES users (id)
+);
 ''')
 db.commit()
 
@@ -40,32 +60,84 @@ while True:
                 data = sock.recv(2048).decode('utf-8')
                 if data.startswith("#"):
                     split_values = data.split(',')
-                    username = split_values[0][1:]  # Remove the '#' from the username
+                    username = split_values[0][1:]
                     password = split_values[1]
+                    print(username,password)
                     cu1 = db.cursor()
                     cu1.execute("select username,password from users where username=? and password=?",(username,password))
                     user1 = cu1.fetchone()
                     if user1 and username == user1[0] and password == user1[1]:
                         users[username.lower()] = sock
                         print("l'utilisateur " + username + " connecté.")
-                        sock.send(("Bienvenue : " + str(data[1:10])).encode('utf-8'))
+                        sock.send(("Bienvenue : " + str(username)).encode('utf-8'))
                     else:
-                        print("mot de passe incorrect")
-                        sock.send(("Mot de passe incorrect").encode('utf-8'))
+                        print("username ou mot de passe incorrect")
+                        sock.send(("username ou  Mot de passe incorrect").encode('utf-8'))
                 elif data.startswith("+"):
                     split_values = data.split(',')
-
-                    # Access individual values
-                    username = split_values[0][1:]  # Remove the '+' from the username
+                    username = split_values[0][1:]
                     nom = split_values[1]
                     prenom = split_values[2]
                     password = split_values[3]
+                    question=split_values[4]
+                    answer=split_values[5]
 
-                    print(username, password, nom, prenom)
+                    print(username, nom, prenom,question, answer,password)
                     cur1 = db.cursor()
-                    cur1.execute('''INSERT INTO users(username,nom,prenom,password) VALUES(?,?,?,?)''',(username, nom, prenom, password))
+                    cur1.execute('''INSERT INTO users(username,nom,prenom,question,answer,password) VALUES(?,?,?,?,?,?)''',(username, nom, prenom,question,answer, password))
                     db.commit()
-                    sock.send(("l'utilisateur " + str(username)+"ajouter avec success").encode('utf-8'))
+                    sock.send(("l'utilisateur " + str(username)+" : a été ajouter avec success").encode('utf-8'))
+
+                    print("l'utilisateur " + str(username)+" : a été ajouter avec success")
+                elif data.startswith("-"):
+                    split_values = data.split(',')
+                    username = split_values[0][1:]
+                   
+                    print(username)
+
+                    c1 = db.cursor()
+                    c1.execute("select username from users where username=?",(username,))
+                    user11 = c1.fetchone()
+                    print(user11[0])
+                    if user11 and username == user11[0]:
+                       sock.send(("verified :" + str(username)).encode('utf-8'))
+
+                    else:
+                        print(" n'a march pas")
+
+                elif data.startswith("*"):
+                    split_values = data.split(',')
+                    username = split_values[0][1:]
+                    question = split_values[1]
+                    answer = split_values[2]
+
+                    print( username,question,answer)
+                    curr2 = db.cursor()
+                    curr2.execute("SELECT * FROM users WHERE username=? and question=? and answer=?",(username,question, answer))
+                    user2 = curr2.fetchone()
+                    if user2:
+                       sock.send(("good job").encode('utf-8'))
+
+                    else:
+                        print('data of user2 not find')
+                    
+
+                
+
+                elif data.startswith("~"):
+                    split_values = data.split(',')
+                    username = split_values[0][1:]
+                    nvpass = split_values[1]
+
+                    print(username,nvpass)
+                    curr2 = db.cursor()
+                    curr2.execute("UPDATE users SET password=? where username=?",(nvpass,username))
+                    db.commit()
+                    print("mot de pass update avec success")
+
+                
+                
+
             except Exception as e:
                 print(str(e))
                 continue
